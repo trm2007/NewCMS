@@ -1,0 +1,87 @@
+<?php
+
+namespace NewCMS\Controllers;
+
+use NewCMS\Views\ArticlesBaseView;
+use Symfony\Component\HttpFoundation\Request;
+use TRMEngine\Controller\TRMLoginController;
+use TRMEngine\DiContainer\TRMDIContainer;
+use TRMEngine\TRMDBObject;
+
+class LoginController extends TRMLoginController
+{
+/**
+ * @var string - имя GET-параметра,
+ *  в котором сохранется исходный URI с которого перенаправили пользователя на страницу авторизации
+ */
+protected static $OriginatingUriArgName = "originating_uri";
+/**
+ * @var TRMDIContainer 
+ */
+protected $DIC;
+
+public function __construct(Request $Request, TRMDIContainer $DIC)
+{
+    parent::__construct(
+        $Request,
+        \GlobalConfig::$ConfigArray["AuthCookieName"], // имя Cookie-фйла для авторизации
+        "/login", // адрес , по которому перенаправляется не авторизованный пользоватьель
+        self::$OriginatingUriArgName, // имя аргумента GET-запроса, в котором сохраняется исходный URI
+        \GlobalConfig::$ConfigArray["AdminFolder"]  // адрес, на который произойдет переадресация авторизованного пользователя,
+    );                                             // если не задан self::$OriginatingUriArgName
+    $this->DIC = $DIC;
+}
+
+/**
+ * пользовательская реализация функции,
+ * должна проверять соответствие пароля и пользователя
+ * 
+ * @param string $name
+ * @param string $password
+ * @return boolean
+ */
+protected function checkPassword($name, $password)
+{
+    //выбираем из БД пользователя с именем $name регистронезависимо !!!
+    // потом надо сделать добавление пользователя проверяя наличие такого имени во всех регистрах !!!
+    $query = "SELECT * FROM `admins` WHERE LOWER(`AdminName`) LIKE LOWER('{$name}')";
+    $result =$this->DIC->get(TRMDBObject::class)->query($query);
+
+    if( !$result || $result->num_rows <= 0 )
+    {
+        return false;
+    }
+
+    $row = $result->fetch_array(MYSQLI_BOTH);
+
+    // просто сравниваем пароли!
+    if( !strcmp($password, $row["AdminPass"]) )
+    {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * пользовательская реализация,
+ * в ней должны предприниматься действия, когда пользователь не авторизован и,
+ * например, должен отображаться вид с формой входа
+ */
+public function renderLoginView()
+{
+    $this->setHeaders();
+    // при заполнении формы self::$OriginatingUriArgName в строке запроса
+    $uri = $this->Request->query->get( $this->OriginatingUriArgumentName, $this->DefaultUri );
+    $name = $this->Request->request->get("name");
+
+    $this->view = new ArticlesBaseView($this);
+    $this->view->setVarsArray(\GlobalConfig::$ConfigArray);
+    $this->view->setVar( $this->OriginatingUriArgumentName, $uri );
+    $this->view->setVar("UserName", $name);
+
+    $this->view->render();
+}
+
+
+} // LoginController

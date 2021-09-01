@@ -1,0 +1,27 @@
+{
+  "name": "trm/newcms",
+  "description": "New VMC for Internet-shop.",
+  "authors": [
+    {
+      "name": "Sergey Kolesnikov",
+      "email": "trm@mail.ru"
+    }
+  ],
+  "require": {
+    "php": ">=5.6.0",
+    "symfony/http-foundation": "3.4.35",
+    "symfony/routing": "3.4",
+    "trm/trmengine": "dev-master"
+  },
+  "repositories": {
+    "trmengine": {
+      "type": "vcs",
+      "url": "https://github.com/trm2007/TRMEngine.git"
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "NewCMS\\": "./"
+    }
+  }
+}
